@@ -67,12 +67,12 @@ TDS(filename,"c") do ds
 
         # cartesian indices
         ci = CartesianIndex(1,1):CartesianIndex(3,2)
-        @test v.var[ci] == data[ci]
+        @test parent(v)[ci] == data[ci]
 
         # write scalar
-        v.var[1,1] = scalar_data
-        v.var[:,:] .= scalar_data
-        @test all(v.var[:,:][:] .== scalar_data)
+        parent(v)[1,1] = scalar_data
+        parent(v)[:,:] .= scalar_data
+        @test all(parent(v)[:,:][:] .== scalar_data)
 
         # stridded write and read
         v[1:2:end,1:2:end] = data[1:2:end,1:2:end]
@@ -88,27 +88,27 @@ TDS(filename,"c") do ds
         "long_name" => "Temperature"
     ])
     @test ds["temp"][:] == data[:]
-    @test eltype(ds["temp"].var) == Int32
+    @test eltype(parent(ds["temp"])) == Int32
     @test ds.dim["lon"] == sz[1]
     @test ds.dim["lat"] == sz[2]
 
     # load in-place of Variable
     data2 = similar(data)
-    load!(ds["temp"].var,data2,:,:)
+    load!(parent(ds["temp"]),data2,:,:)
     @test data2 == data
 
     data2 = zeros(eltype(data),sz[1],2)
-    load!(ds["temp"].var,data2,:,1:2)
+    load!(parent(ds["temp"]),data2,:,1:2)
     @test data2 == data[:,1:2]
 
     data2 = zeros(eltype(data),sz[1],1)
-    load!(ds["temp"].var,data2,:,1)
+    load!(parent(ds["temp"]),data2,:,1)
     @test data2[:] == data[:,1]
 
     # load in-place of CFVariable
     ncv = ds["temp"]
     data2 = similar(data)
-    buffer = zeros(eltype(ncv.var),size(ncv));
+    buffer = zeros(eltype(parent(ncv)),size(ncv));
     load!(ncv,data2,buffer,:,:)
     @test data2 == data
 
@@ -121,7 +121,7 @@ TDS(filename,"c") do ds
     # load in-place of CFVariable with fill value
     ncv = ds["foo"]
     data2 = zeros(eltype(ncv),size(ncv))
-    buffer = zeros(eltype(ncv.var),size(ncv));
+    buffer = zeros(eltype(parent(ncv)),size(ncv));
     load!(ncv,data2,buffer,:)
     @test isequal(data2,data)
 
@@ -280,11 +280,11 @@ data = [1,2,3]
 ncv = defVar(ds,"data",data,("data",))
 data2 = zeros(Int,1)
 # data2 too small
-@test_throws DimensionMismatch load!(ds["data"].var,data2,:)
+@test_throws DimensionMismatch load!(parent(ds["data"]),data2,:)
 
 data2 = zeros(Int,10)
 # asking too many elements
-@test_throws BoundsError load!(ds["data"].var,data2,1:10)
+@test_throws BoundsError load!(parent(ds["data"]),data2,1:10)
 
 # issue 22
 filename = tempname()
